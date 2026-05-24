@@ -1,6 +1,6 @@
 {
   "name": "multi-agent-coordination",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Run multiple Claude Code terminals on the same project without collisions. File-level locks, shared kanban board, planner approval gate, configurable git workflow. Works for solo (1) up to swarm (5+) terminals.",
   "author": {
     "name": "Boburjon Rahimjonov",
