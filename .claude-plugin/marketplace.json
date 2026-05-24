@@ -10,7 +10,7 @@
       "name": "multi-agent-coordination",
       "source": "./plugins/multi-agent-coordination",
       "description": "Coordinate multiple Claude Code terminals on one project — file locks, shared kanban, planner approval gate. Battle-tested in production.",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "category": "workflow",
       "tags": ["multi-agent", "parallel", "coordination", "workflow", "team", "kanban", "locks"]
     }

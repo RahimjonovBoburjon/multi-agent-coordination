@@ -20,6 +20,18 @@ Check whether `.multi-agent/config.json` already exists at the repo root.
 
 If it does NOT exist: proceed to Step 2.
 
+### CRITICAL: "Overwrite from scratch" means FULL re-generation
+
+When the user picks "Overwrite from scratch", you MUST regenerate **every** wizard output even if the new settings end up identical to the old config:
+
+- `.multi-agent/config.json` — write fresh
+- `CLAUDE.md` block — re-generate the BEGIN/END section using the **current** templates (this is how version upgrades like v1.0.0 → v1.0.1 actually take effect — fresh interpolation with new template strings).
+- Re-print the terminal intros.
+
+**Never short-circuit with "settings are identical, skipping regeneration"** — the templates themselves may have changed between plugin versions, and skipping means the user's project stays stuck on the old conventions (e.g. still showing `T4` after we renamed to `P`). The whole point of "overwrite from scratch" is to discard the old artifacts and rebuild from current sources.
+
+If the user wants minimal changes, they pick "update individual settings" instead.
+
 ## Step 2 — preset (the only mandatory question)
 
 Use `AskUserQuestion` with these 5 options:
@@ -288,25 +300,60 @@ In all cases that write, interpolate the template (`<skill-dir>/templates/CLAUDE
 
 Always wrap the block in `<!-- BEGIN: multi-agent-coordination -->` … `<!-- END: multi-agent-coordination -->` markers so future re-runs can replace cleanly.
 
-## Step 9 — output terminal intros
+## Step 9 — output terminal intros (VERBATIM from templates)
 
 For each terminal the user plans to open, print a clearly-fenced block they can copy-paste verbatim into that terminal's first message.
 
-Header format:
+### Header format (exact)
+
+Use these exact headers — no alternative phrasings:
+
 ```
-━━━ T1 (Developer) ━━━     ← for developer terminals
+━━━ T1 (Developer) ━━━     ← for developer terminals (T1, T2, T3, …)
 ━━━ P (Planner) ━━━         ← for the planner terminal (only if has_planner)
 ━━━ SOLO ━━━                ← for solo mode
 ```
 
-Number developers from `T1` up to `T<terminal_count - 1>` if `has_planner` is true (since one slot is the planner), or up to `T<terminal_count>` if `has_planner` is false. **Never label the planner `T<N>` — always `P`.**
+**Never use `TERMINAL 1`, `TERMINAL 4`, `Terminal A`, or any other variation.** The header is literally `━━━ T<N> (Developer) ━━━` or `━━━ P (Planner) ━━━`. Lower-case `t`, upper-case `T`, prefixes like "Terminal" — all WRONG. Match the format above byte-for-byte.
 
-Body: interpolate the appropriate intro template:
-- Solo mode → `templates/intros/solo-intro.md`
-- Planner terminal → `templates/intros/planner-intro.md`
-- Developer terminals → `templates/intros/developer-intro.md` with `{{TERMINAL_NUMBER}}` set to `1`, `2`, …
+### Numbering
 
-Interpolate all `{{PLACEHOLDERS}}` from the config.
+- Developer numbers run from `T1` up to `T<terminal_count - 1>` if `has_planner` is true (one slot belongs to the planner), or up to `T<terminal_count>` if `has_planner` is false.
+- The planner is ALWAYS labeled `P` regardless of how many terminals there are. Not `T3`, not `T4`, not `T<count>` — `P`.
+
+### Body — PRINT THE TEMPLATE VERBATIM
+
+This is the most-violated step. You MUST:
+
+1. **Read** the appropriate template file:
+   - Solo mode → `templates/intros/solo-intro.md`
+   - Planner terminal → `templates/intros/planner-intro.md`
+   - Developer terminal → `templates/intros/developer-intro.md`
+
+2. **Substitute** every `{{PLACEHOLDER}}` with the value from `.multi-agent/config.json` (and `{{TERMINAL_NUMBER}}` with the developer's number for developer intros).
+
+3. **Print the entire substituted template, verbatim, from line 1 to the last line.** Do not:
+   - Summarize the template into a shorter version.
+   - Paraphrase the responsibilities into a one-liner.
+   - Skip the "You MAY / You MUST NOT" sections.
+   - Replace markdown headings with prose.
+   - Compress multi-paragraph sections into bullet points.
+
+The intro file is ~50 lines of structured guidance. The output block should also be ~50 lines. If your block is 5 lines, you summarized — start over and print the actual template.
+
+Why this matters: the intro is what onboards the receiving terminal. If you summarize, the terminal misses critical rules (lock protocol details, commit format constraints, what they MUST NOT do). The receiving Claude session then improvises and the coordination protocol breaks down.
+
+### Final check before declaring "setup complete"
+
+After printing the intros, scan your own output. Confirm:
+
+- [ ] Every developer header is `━━━ T<N> (Developer) ━━━` — no other format.
+- [ ] If `has_planner`, exactly one block has header `━━━ P (Planner) ━━━` — never `T4` or `T<count>`.
+- [ ] Each developer intro body contains the line "You are Terminal {{TERMINAL_NUMBER}} (Developer) for this project" with the placeholder substituted (e.g. "You are Terminal 1 (Developer) for this project").
+- [ ] The planner intro body contains "You are the Planner (P) for this project".
+- [ ] No intro body is shorter than ~40 lines of substituted content.
+
+If any check fails, re-print the offending block correctly before moving on.
 
 After the intros, print a short next-steps summary:
 
