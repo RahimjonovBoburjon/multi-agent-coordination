@@ -1,0 +1,18 @@
+{
+  "name": "multi-agent-coordination",
+  "owner": {
+    "name": "Boburjon Rahimjonov",
+    "email": "rahimjonovboburjon.dev@gmail.com",
+    "url": "https://github.com/RahimjonovBoburjon"
+  },
+  "plugins": [
+    {
+      "name": "multi-agent-coordination",
+      "source": "./plugins/multi-agent-coordination",
+      "description": "Coordinate multiple Claude Code terminals on one project — file locks, shared kanban, planner approval gate. Battle-tested in production.",
+      "version": "1.0.0",
+      "category": "workflow",
+      "tags": ["multi-agent", "parallel", "coordination", "workflow", "team", "kanban", "locks"]
+    }
+  ]
+}
