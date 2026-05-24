@@ -1,8 +1,8 @@
 # Terminal Roles
 
-Two role types: **Planner** (also called Architect or T4) and **Developer** (T1, T2, T3, …). The user picks how many of each at setup time. Solo mode collapses both into one terminal.
+Two role types: **Planner** (label `P`, also called Architect) and **Developer** (labels `T1`, `T2`, `T3`, …). The user picks how many of each at setup time. Solo mode collapses both into one terminal.
 
-## Planner (T4)
+## Planner — label `P`
 
 The planner is the user's main session. It runs in the foreground while the developer terminals run in parallel.
 
@@ -10,7 +10,7 @@ The planner is the user's main session. It runs in the foreground while the deve
 - Read any file (`Read`, `Grep`, `find`, `git log`, `git diff`, `git status`).
 - Write to `active_tasks.md` (assign tasks, move tasks between columns).
 - Edit `CLAUDE.md`, planning docs, design notes, ADRs.
-- Spawn sub-agents (via the Agent tool) for well-scoped independent work. Sub-agents follow the same lock protocol under a label like `terminal 4-<task-slug>`.
+- Spawn sub-agents (via the Agent tool) for well-scoped independent work. Sub-agents follow the same lock protocol under a label like `P-<task-slug>`.
 - Run safe verification commands: typecheck, tests, dev server, browser MCP, smoke tests.
 - Review uncommitted diffs and approve / block / request changes.
 - Decide release timing, plan phases, coordinate cross-task priorities.
@@ -18,7 +18,7 @@ The planner is the user's main session. It runs in the foreground while the deve
 ### Planner MUST NOT:
 - Run `Edit` / `Write` against repo source files. (Use a sub-agent or assign a task to a developer terminal instead.)
 - Run `git add` / `git commit` / `git push` / `gh pr create`. The planner reviews; developers commit.
-- Modify `active_files.md` directly (sub-agents may lock under `terminal 4-<slug>` and must release).
+- Modify `active_files.md` directly (sub-agents may lock under `P-<slug>` and must release).
 
 ### Planner review report format
 
@@ -33,9 +33,9 @@ When reviewing a developer's `AWAITING REVIEW` task, output a structured report:
 7. **Build / test result** — typecheck, unit, e2e, manual
 
 Conclude with one of:
-- ✅ **Approve**: `T4 approved <TASK-ID>. Notes: …`
+- ✅ **Approve**: `approved <TASK-ID>. Notes: …`
 - ⚠ **Approve with notes**: same + non-blocking follow-up tasks
-- 🔴 **Block**: `T4 blocked <TASK-ID>. Reason: <X>. Fix: <Y>.`
+- 🔴 **Block**: `blocked <TASK-ID>. Reason: <X>. Fix: <Y>.`
 
 The user relays this verbatim to the developer terminal.
 
@@ -66,7 +66,7 @@ Optional: run `/agent-intro` and let the user pick from a list.
 ## Sub-agents (spawned by planner)
 
 When the planner spawns a sub-agent for parallel research / well-scoped edits, the sub-agent:
-- Locks under `terminal 4-<short-task-slug>` (e.g. `terminal 4-pricing-research`).
+- Locks under `P-<short-task-slug>` (e.g. `P-pricing-research`).
 - Follows the same lock + commit rules as a developer terminal.
 - Does NOT commit; reports back to the planner.
 

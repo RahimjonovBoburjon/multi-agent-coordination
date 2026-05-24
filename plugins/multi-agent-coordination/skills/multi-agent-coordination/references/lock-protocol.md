@@ -12,14 +12,16 @@ Both are append-/edit-heavy and read by every terminal multiple times per task.
 ### Line format
 
 ```
-- <relative/path/from/repo/root> → terminal <N> @ <ISO-8601-timestamp>
+- <relative/path/from/repo/root> → T<N> @ <ISO-8601-timestamp>
 ```
+
+Where `<N>` is the developer terminal number (`T1`, `T2`, …) or `P` for the planner (planner sub-agents use `P-<short-slug>`).
 
 Example:
 ```
-- frontend/src/views/admin/Dashboard.vue → terminal 1 @ 2026-05-24T14:32:15+05:00
-- backend/src/modules/auth/auth.service.ts → terminal 2 @ 2026-05-24T14:35:02+05:00
-- frontend/src/i18n/locales/ru.json → terminal 4-pricing-i18n @ 2026-05-24T14:40:00+05:00
+- frontend/src/views/admin/Dashboard.vue → T1 @ 2026-05-24T14:32:15+05:00
+- backend/src/modules/auth/auth.service.ts → T2 @ 2026-05-24T14:35:02+05:00
+- frontend/src/i18n/locales/ru.json → P-pricing-i18n @ 2026-05-24T14:40:00+05:00
 ```
 
 ### Protocol (per file edit)
@@ -40,7 +42,7 @@ Example:
 - Batch edits: lock each file before its edit, release each after. Don't hold a stack of locks for minutes.
 - Read-only operations (`Read`, `Grep`, `Bash` inspection, `git status`, `git diff`) do NOT need a lock.
 - `active_files.md` itself is gitignored — never commit it.
-- Sub-agents spawned by the planner lock under a label: `terminal 4-<short-slug>`. Same release rules apply.
+- Sub-agents spawned by the planner lock under a label: `P-<short-slug>`. Same release rules apply.
 
 ### Stale-lock detection
 

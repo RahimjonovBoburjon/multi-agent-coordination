@@ -65,22 +65,44 @@ Read the project files:
 - `Makefile` has `test` → `make test`
 - Otherwise: ask the user free-text.
 
-### Git branches
-Detect via Bash:
-- Integration: `git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@'` — fall back to `git branch --show-current`, then default `dev`.
-- Production: `main` if it exists locally or on remote, else `master`, else fall back to integration branch.
+### Git branches and branch model
+
+Detect existing branches via Bash:
+
+```bash
+git branch -a 2>/dev/null
+git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@'
+```
+
+Then **decide the branch model** based on what exists:
+
+- **If only `main` (or only `master`) exists** → single-branch model. Set `integration_branch = prod_branch = main` (or master). Tell the user: "Detected: only `main` branch exists. Daily commits and production will both use `main`."
+- **If both `dev` (or `develop`) and `main` exist** → two-branch model. Set `integration_branch = dev`, `prod_branch = main`. Tell the user: "Detected: `dev` for daily commits, `main` for production releases."
+- **If neither exists** (fresh repo) → ask the user explicitly.
+
+### Branch model — explicit question (always ask, even if detected)
+
+Even when auto-detected, surface the branch model as a deliberate choice. Use `AskUserQuestion`:
+
+> **Branch model** — where should daily commits go?
+>
+> - **One branch (`main` only)** — all commits go to `main`. Releases tagged. Simplest. Good for MVP, prototype, internal tools.
+> - **Two branches (`dev` + `main`)** — daily commits to `dev`. `dev → main` via release PR, then tag. Safer; lets you test before production deploys.
+> - **Other** — pick custom branch names.
+
+If user picks two-branch and only one exists locally, ask: "Create the missing `dev` branch now? (yes / no — I'll skip and you can create it later)."
 
 ### Project name
 Default: the basename of the current directory.
 
 ### Confirmation prompt
 
-Present everything detected in a single AskUserQuestion:
+After all auto-detection + branch model is decided, present everything in a single AskUserQuestion:
 
-> "I detected these settings. Use them or customize?"
-> - **Use these** — project: `<name>`, build: `<cmd>`, test: `<cmd>`, integration: `<branch>`, production: `<branch>`
+> "I detected/picked these settings. Use them or customize?"
+> - **Use these** — project: `<name>`, build: `<cmd>`, test: `<cmd>`, branches: `<integration>` / `<production>` (`<one-branch | two-branch>` model)
 > - **Customize commands** — only edit build/test
-> - **Customize branches** — only edit integration/production names
+> - **Customize branches** — re-pick integration / production names
 > - **Customize everything** — go through each one
 
 If "Use these" — skip to Step 4.
@@ -92,20 +114,72 @@ If the preset was Swarm, ask the exact terminal count (free text, validate 5-20)
 
 ## Step 5 — Custom mode (only if Custom preset was chosen)
 
-Walk through the original 13 questions one at a time. Use `AskUserQuestion` everywhere, with the same options as before:
+Walk through these questions one at a time. Use `AskUserQuestion` everywhere with explanatory descriptions — these are the settings most users get wrong, so each option must explain trade-offs.
 
-1. Exact terminal count (free text, 2-20).
-2. Dedicated planner? Yes / No.
-3. Stale-lock TTL — 10 / 15 / 30 / 60 / Custom.
-4. Stale-lock policy — auto-clear / warn.
-5. Git variant — A / B / none.
-6. Integration branch (if git workflow).
-7. Production branch (if git workflow).
-8. Approval gate — Yes / No.
-9. Build command.
-10. Test command.
-11. Commit format — Conventional / Freeform / None.
-12. Project name.
+### 5.1 — Exact terminal count
+Free text, validate 2-20.
+
+### 5.2 — Dedicated planner?
+- **Yes** — one terminal plans + reviews and NEVER writes code. Approval gate becomes available. Recommended for 3+ terminals.
+- **No** — all terminals are equal developers. No approval gate. Faster but less safe.
+
+### 5.3 — Stale-lock TTL
+After how many minutes is a held lock considered abandoned (terminal crashed / forgot to release)?
+- **10 / 15 / 30 / 60 minutes / Custom**. Default 15. Shorter = faster recovery from crashes; longer = safer when devs do slow edits.
+
+### 5.4 — Stale-lock policy
+When a stale lock is detected:
+- **Auto-clear** — any terminal removes it silently. Good for solo + pair.
+- **Warn only** — terminal prints a warning, asks user before clearing. Safer for squad/swarm.
+
+### 5.5 — Git workflow variant (with full explanations)
+
+Show the user this with `AskUserQuestion`:
+
+> **How should multiple terminals coordinate via git?**
+>
+> - **Variant B — Direct to Integration Branch** *(recommended for solo / AI / small teams)*
+>   Each developer commits directly to one branch (typically `dev`). No per-task feature branches. The Planner approval gate plays the code-review role.
+>   - ✅ Pros: simple, fast, no cross-task dependency chaos, clean history, AI-friendly.
+>   - ❌ Cons: less per-task git granularity for rollback.
+>
+> - **Variant A — Feature Branches + PR per task**
+>   Each task gets its own branch (`feat/S2-A-...`). Developer pushes branch, opens PR. User merges via GitHub UI.
+>   - ✅ Pros: per-task git history; works with GitHub PR review tooling; familiar to traditional teams.
+>   - ❌ Cons: cross-task dependencies are a hassle (S2-B can't import from S2-A until S2-A is merged); branch overhead; stale branches multiply.
+>
+> - **None** — no git workflow management. Manual commits, no protocol.
+
+### 5.6 — Branch model (if variant ≠ None)
+
+> **Branch model** — how many long-lived branches?
+>
+> - **One branch (`main` only)** — daily commits + production both on `main`. Releases tagged. Simpler.
+> - **Two branches (`dev` + `main`)** — daily commits on `dev`. Promotion to `main` via release PR + tag. Safer.
+
+### 5.7 — Integration branch name
+If two-branch: default `dev`, ask. If one-branch: skip — use `main`.
+
+### 5.8 — Production branch name
+Default `main`. Ask only if two-branch.
+
+### 5.9 — Approval gate enabled?
+- **Yes** *(recommended)* — developers wait for Planner approval before commit.
+- **No** — developers commit after their own verification.
+
+### 5.10 — Build / typecheck command
+Free text. Wizard suggests from auto-detection.
+
+### 5.11 — Test command
+Free text. Wizard suggests from auto-detection.
+
+### 5.12 — Commit format
+- **Conventional Commits** — `<type>(<scope>): <description>` (feat, fix, refactor, …).
+- **Freeform** — clear imperative messages.
+- **None** — no convention enforced.
+
+### 5.13 — Project name
+Free text. Default = directory basename.
 
 ## Step 6 — confirm and write
 
@@ -153,61 +227,66 @@ active_files.md
 
 **Do NOT add `.multi-agent/` to .gitignore** — config.json should be committed. Only the live kanban + lock state is gitignored.
 
-## Step 3 — write config
+## Step 8 — append the multi-agent block to CLAUDE.md (with smart-detect)
 
-Write `.multi-agent/config.json` at the repo root with all answers:
+This step is the most sensitive — the user's `CLAUDE.md` might already have content. Treat it carefully.
 
-```json
-{
-  "version": "1.0.0",
-  "project_name": "...",
-  "scale_mode": "solo|pair|squad|swarm",
-  "terminal_count": 3,
-  "has_planner": true,
-  "lock_ttl_minutes": 15,
-  "stale_lock_policy": "auto-clear|warn",
-  "git_variant": "A|B|none",
-  "integration_branch": "dev",
-  "prod_branch": "main",
-  "approval_gate_enabled": true,
-  "build_command": "npm run build",
-  "test_command": "npm test",
-  "commit_format": "conventional|freeform|none",
-  "configured_at": "<ISO timestamp>"
-}
-```
+### 8.1 — Read existing CLAUDE.md (if any)
 
-## Step 4 — scaffold coordination files
+If `CLAUDE.md` already exists at the project root, read it. If it doesn't exist, skip to 8.3 (just create a new file).
 
-Create at the repo root (if they don't already exist — never overwrite existing kanban / lock state):
+### 8.2 — Smart-detect overlapping sections
 
-- `active_tasks.md` — copy from `<skill-dir>/templates/active_tasks.md`
-- `active_files.md` — copy from `<skill-dir>/templates/active_files.md` (skip in Solo mode)
+Scan the existing CLAUDE.md for headings (lines starting with `## ` or `### `) and check for overlap with the topics our block introduces. Look for headings matching any of these patterns (case-insensitive):
 
-Patch `.gitignore` (create if missing) — append these lines if not already present:
-```
-active_tasks.md
-active_files.md
-.multi-agent/
-```
+- "multi-agent" / "agents" / "terminals" / "parallel"
+- "git workflow" / "branch" / "branching" / "release"
+- "commit" / "commit format" / "conventional"
+- "approval" / "review" / "code review"
+- "lock" / "locking" / "file lock"
+- "kanban" / "tasks" / "task board"
 
-## Step 8 — append the multi-agent block to CLAUDE.md
+Also check for the existing BEGIN/END markers: `<!-- BEGIN: multi-agent-coordination -->` … `<!-- END: multi-agent-coordination -->`.
 
-Read `<skill-dir>/templates/CLAUDE-section.md`. Interpolate all the `{{PLACEHOLDERS}}`:
+### 8.3 — Decide what to do
+
+**Case A — Existing markers found:**
+Replace the content between `<!-- BEGIN: multi-agent-coordination -->` and `<!-- END: multi-agent-coordination -->` with the freshly interpolated block. Leave everything else untouched. No confirmation needed (this is the re-run case).
+
+**Case B — No markers, but overlapping headings detected:**
+List the overlapping headings to the user. Use `AskUserQuestion`:
+
+> Found N potentially overlapping sections in your CLAUDE.md:
+> - "## Git Workflow" (line 42)
+> - "## Commit conventions" (line 88)
+>
+> The multi-agent block also covers these topics. What to do?
+>
+> - **Append at end anyway** — your existing sections stay; our block goes at the bottom. You can manually consolidate later. *(default safe)*
+> - **Show the new block, let me decide manually** — print the interpolated block, skip writing CLAUDE.md. User merges by hand.
+> - **Skip CLAUDE.md update entirely** — don't touch CLAUDE.md. Only write config + kanban + locks files. **You should manually add rules from `references/` later.**
+
+**Case C — No markers, no overlapping headings:**
+Append the block to the end of the existing CLAUDE.md, wrapped in BEGIN/END markers. No confirmation needed.
+
+**Case D — CLAUDE.md doesn't exist:**
+Create CLAUDE.md with just the interpolated block wrapped in BEGIN/END markers.
+
+### 8.4 — Interpolation
+
+In all cases that write, interpolate the template (`<skill-dir>/templates/CLAUDE-section.md`):
 
 - `{{TERMINAL_COUNT}}` — from config
-- `{{ROLES_TABLE}}` — generate based on planner Y/N and terminal count
+- `{{ROLES_TABLE}}` — generate based on `has_planner` and `terminal_count` (rows: T1, T2, …, plus a final P row if has_planner). Always use `P` as the planner label, never `T<count>`.
 - `{{LOCK_TTL_MINUTES}}` — from config
 - `{{STALE_LOCK_POLICY}}` — human readable ("auto-clear" or "warn user before clearing")
 - `{{APPROVAL_GATE_BLOCK}}` — full paragraph if enabled; "Disabled — developers commit after their own verification." otherwise
 - `{{GIT_VARIANT_NAME}}` — "Variant A (feature branches)" / "Variant B (single integration branch)" / "none"
-- `{{GIT_WORKFLOW_BLOCK}}` — short paragraph appropriate to the variant
+- `{{GIT_WORKFLOW_BLOCK}}` — short paragraph appropriate to the variant + branch model (one-branch vs two-branch). If integration_branch == prod_branch, say "single-branch model"; else two-branch with `dev → main` PR for releases.
 - `{{BUILD_COMMAND}}`, `{{TEST_COMMAND}}` — from config
 - `{{COMMIT_FORMAT_BLOCK}}` — appropriate paragraph
 
-If `CLAUDE.md` exists, append the interpolated block. If it doesn't, create `CLAUDE.md` with just this block (the user can add other rules later).
-
-Wrap the block in the BEGIN/END markers from the template so re-runs can replace it cleanly.
+Always wrap the block in `<!-- BEGIN: multi-agent-coordination -->` … `<!-- END: multi-agent-coordination -->` markers so future re-runs can replace cleanly.
 
 ## Step 9 — output terminal intros
 
@@ -215,13 +294,17 @@ For each terminal the user plans to open, print a clearly-fenced block they can 
 
 Header format:
 ```
-━━━ TERMINAL <N> (<role>) ━━━
+━━━ T1 (Developer) ━━━     ← for developer terminals
+━━━ P (Planner) ━━━         ← for the planner terminal (only if has_planner)
+━━━ SOLO ━━━                ← for solo mode
 ```
+
+Number developers from `T1` up to `T<terminal_count - 1>` if `has_planner` is true (since one slot is the planner), or up to `T<terminal_count>` if `has_planner` is false. **Never label the planner `T<N>` — always `P`.**
 
 Body: interpolate the appropriate intro template:
 - Solo mode → `templates/intros/solo-intro.md`
-- Planner terminal (T4 in modes with a planner) → `templates/intros/planner-intro.md`
-- Developer terminals (T1, T2, T3, …) → `templates/intros/developer-intro.md` with `{{TERMINAL_NUMBER}}` set
+- Planner terminal → `templates/intros/planner-intro.md`
+- Developer terminals → `templates/intros/developer-intro.md` with `{{TERMINAL_NUMBER}}` set to `1`, `2`, …
 
 Interpolate all `{{PLACEHOLDERS}}` from the config.
 
@@ -244,7 +327,10 @@ To re-configure later: run /multi-agent-init again.
 - **Presets bake in defaults — don't ask about them.** Solo / Pair / Squad / Swarm cover 95% of users. Only **Custom** mode asks every question.
 - **Auto-detect before asking.** Build commands, test commands, branch names — read the project. Confirm in a single step rather than asking each separately.
 - **Show what you detected.** When proposing build/test/branches, list them clearly so the user can spot a mismatch before confirming.
+- **Always ask about branch model explicitly.** Even when auto-detected, surface "one-branch vs two-branch" as a deliberate choice — the user may want to set up a dev branch even if only main exists.
+- **Explain Variant A vs B with trade-offs.** When the user picks Custom mode, the variant question must include pros/cons (cross-task dependency chaos for A; less per-task history for B). Don't just list "A or B" — that's meaningless without context.
 - **Never overwrite existing `active_tasks.md` or `active_files.md` content.** If the files exist, leave them as-is (the user may be re-configuring mid-project and have live state in them).
-- **The CLAUDE.md block is the only file `/multi-agent-init` overwrites** — and only between its BEGIN/END markers.
+- **The CLAUDE.md block is the only file `/multi-agent-init` overwrites — and only between its BEGIN/END markers.** If the user has overlapping sections (Git Workflow, Commit Format, etc.), warn them first and let them choose (append, skip, or merge manually).
 - **`.multi-agent/config.json` is committed, NOT gitignored.** Team members cloning the repo get the same multi-agent settings without re-running the wizard.
+- **Planner is always labeled `P`, never `T<N>`.** Developer labels are `T1`, `T2`, …, `T<n>`. This is the rule in intros, lock files, kanban entries, and the CLAUDE.md roles table.
 - **Final confirmation.** Before writing, summarize the full resolved settings (preset + detected + customized) and ask "Confirm and write?" — one last sanity check.

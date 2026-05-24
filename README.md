@@ -129,7 +129,7 @@ When a new terminal joins (or restarts), run `/agent-intro`. It asks which termi
 
 ## Where this comes from
 
-The protocol was developed for **Etihad CRM**, a production NestJS + Vue + Postgres system, where four Claude Code terminals (T1, T2, T3 developers + T4 planner) ship features in parallel every day. It survived:
+The protocol was developed for **Etihad CRM**, a production NestJS + Vue + Postgres system, where four Claude Code terminals (T1, T2, T3 developers + P planner) ship features in parallel every day. It survived:
 
 - Multi-week sprints with concurrent feature work.
 - Cross-task file dependencies (the reason we picked Variant B over feature branches — explained in `references/git-workflow-variants.md`).

@@ -58,7 +58,7 @@ Common breakage and recovery recipes.
 
 ## Sub-agent forgot to release a lock
 
-**Symptom:** a `terminal 4-<slug>` lock persists after the planner's sub-agent finished.
+**Symptom:** a `P-<slug>` lock persists after the planner's sub-agent finished.
 
 **Fix:** the planner removes the orphaned line by hand. The sub-agent doesn't have a slash command of its own.
 

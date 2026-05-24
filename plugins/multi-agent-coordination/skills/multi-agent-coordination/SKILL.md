@@ -19,7 +19,7 @@ Activate this skill when the user:
 
 ## The five core mechanics
 
-1. **Terminal roles** — each session has an explicit role: Planner (T4 — reviews, never writes code) or Developer (T1/T2/T3… — implements). See `references/terminal-roles.md`.
+1. **Terminal roles** — each session has an explicit role: Planner (label `P` — reviews, never writes code) or Developer (labels `T1`, `T2`, `T3`, … — implements). See `references/terminal-roles.md`.
 2. **File locks** — `active_files.md` is a shared lock registry. Append a line before editing, remove after. Timestamped so stale locks expire. See `references/lock-protocol.md`.
 3. **Shared kanban** — `active_tasks.md` has four sections (TODO / AWAITING REVIEW / BLOCKED / DONE). Single source of truth for what each terminal is doing. See `references/lock-protocol.md` (kanban section).
 4. **Approval gate** — developers never commit until the planner has reviewed the uncommitted diff and explicitly approved. See `references/approval-gate.md`.
@@ -100,7 +100,7 @@ This way the user does not have to explain anything — every terminal gets onbo
 
 ## Lock protocol (one-paragraph version)
 
-Before editing any file: read `active_files.md`. If the target path is listed by another terminal, wait 30s and recheck. If not listed, append `- <path> → terminal <N> @ <ISO-timestamp>`. Edit. Remove the line immediately when done. Locks older than the configured TTL are stale — any terminal may warn or auto-clear them per project policy. Full details and edge cases: `references/lock-protocol.md`.
+Before editing any file: read `active_files.md`. If the target path is listed by another terminal, wait 30s and recheck. If not listed, append `- <path> → T<N> @ <ISO-timestamp>` (developers — use `P` for the planner). Edit. Remove the line immediately when done. Locks older than the configured TTL are stale — any terminal may warn or auto-clear them per project policy. Full details and edge cases: `references/lock-protocol.md`.
 
 ## Approval gate (one-paragraph version)
 

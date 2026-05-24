@@ -15,7 +15,7 @@ Print a role-tailored intro for the current Claude Code terminal session. Use th
 2. **If Solo mode** (`scale_mode == "solo"`): just print `templates/intros/solo-intro.md`, interpolated with config. Done.
 
 3. **Otherwise, ask which terminal this is.** Use `AskUserQuestion` with options based on terminal count:
-   - If `has_planner == true`: include "Planner (T4)" + "Developer T1" + "Developer T2" + … up to `terminal_count - 1` developers.
+   - If `has_planner == true`: include "Planner (P)" + "Developer T1" + "Developer T2" + … up to `terminal_count - 1` developers.
    - If `has_planner == false`: list "Developer T1" + … + "Developer T<terminal_count>".
 
 4. **Print the matching intro** with all `{{PLACEHOLDERS}}` interpolated from config:

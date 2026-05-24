@@ -14,19 +14,19 @@ Remove every line in `active_files.md` whose terminal label matches the current 
 2. **Read** `active_files.md`. Parse lines.
 
 3. **Ask the user**: "Which terminal label should I release locks for?"
-   Provide options based on config (`T1`, `T2`, …, plus `T4` and any `T4-*` sub-agent labels visible in the file).
+   Provide options based on config (`T1`, `T2`, …, plus `P` and any `P-*` sub-agent labels visible in the file).
 
 4. **Show the lines that match** and confirm before deleting:
    ```
    I will remove these lines from active_files.md:
-   - <path-1> → terminal 2 @ 2026-05-24T...
-   - <path-2> → terminal 2 @ 2026-05-24T...
+   - <path-1> → T2 @ 2026-05-24T...
+   - <path-2> → T2 @ 2026-05-24T...
    Confirm? (yes / no)
    ```
 
 5. **If confirmed**, edit `active_files.md` to delete exactly those lines. Preserve all other lines (other terminals' locks).
 
-6. **If the user picked a sub-agent label** (`terminal 4-*`), only match lines with that exact label, not all `terminal 4-*`.
+6. **If the user picked a sub-agent label** (`P-*`), only match lines with that exact label, not all `P-*`.
 
 7. **Report**: "Released N locks for <label>."
 

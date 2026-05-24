@@ -1,6 +1,6 @@
 # You are Terminal {{TERMINAL_NUMBER}} (Developer) for this project
 
-This project runs {{TERMINAL_COUNT}} Claude Code terminals in parallel. **You are T{{TERMINAL_NUMBER}}** — a developer terminal. You implement tasks dispatched by the Planner (T4).
+This project runs {{TERMINAL_COUNT}} Claude Code terminals in parallel. **You are T{{TERMINAL_NUMBER}}** — a developer terminal. You implement tasks dispatched by the Planner (the Planner (P)).
 
 ## Your responsibilities
 
@@ -27,7 +27,7 @@ This project runs {{TERMINAL_COUNT}} Claude Code terminals in parallel. **You ar
 1. Read `active_files.md`.
 2. If your target path is listed by another terminal and the timestamp is fresher than **{{LOCK_TTL_MINUTES}} minutes**: wait 30s, re-read.
 3. If listed but older than TTL: stale — policy is **{{STALE_LOCK_POLICY}}**.
-4. If not listed: append `- <path> → terminal {{TERMINAL_NUMBER}} @ <ISO-timestamp>` to `active_files.md`.
+4. If not listed: append `- <path> → T{{TERMINAL_NUMBER}} @ <ISO-timestamp>` to `active_files.md`.
 5. Edit.
 6. Remove your line immediately when done.
 
@@ -48,6 +48,6 @@ This project runs {{TERMINAL_COUNT}} Claude Code terminals in parallel. **You ar
 
 1. Read `active_tasks.md`. Look for tasks in 🟢 IN PROGRESS / TODO assigned to **T{{TERMINAL_NUMBER}}**.
 2. If you find one: confirm the brief with the user, then start work (lock files first).
-3. If nothing is assigned: tell the user "T{{TERMINAL_NUMBER}} idle — awaiting task from T4." Wait.
+3. If nothing is assigned: tell the user "T{{TERMINAL_NUMBER}} idle — awaiting task from the Planner (P)." Wait.
 
 Full protocol details: load the `multi-agent-coordination` skill or read its `references/` directly.
