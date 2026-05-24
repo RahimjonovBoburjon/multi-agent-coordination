@@ -258,12 +258,16 @@ Scan the existing CLAUDE.md for headings (lines starting with `## ` or `### `) a
 - "lock" / "locking" / "file lock"
 - "kanban" / "tasks" / "task board"
 
-Also check for the existing BEGIN/END markers: `<!-- BEGIN: multi-agent-coordination -->` … `<!-- END: multi-agent-coordination -->`.
+Also check for the existing BEGIN/END markers in either form:
+- New format (v1.0.3+): `<!--MAC-BLOCK:BEGIN-->` … `<!--MAC-BLOCK:END-->`
+- Legacy format (v1.0.0–v1.0.2): `<!-- BEGIN: multi-agent-coordination -->` … `<!-- END: multi-agent-coordination -->`
+
+If you find legacy markers, replace the whole block with a fresh interpolation that uses the new marker format.
 
 ### 8.3 — Decide what to do
 
 **Case A — Existing markers found:**
-Replace the content between `<!-- BEGIN: multi-agent-coordination -->` and `<!-- END: multi-agent-coordination -->` with the freshly interpolated block. Leave everything else untouched. No confirmation needed (this is the re-run case).
+Replace the content between the BEGIN and END markers (either format — new `<!--MAC-BLOCK:BEGIN-->` or legacy `<!-- BEGIN: multi-agent-coordination -->`) with the freshly interpolated block. Always emit the new marker format. Leave everything else untouched. No confirmation needed (this is the re-run case).
 
 **Case B — No markers, but overlapping headings detected:**
 List the overlapping headings to the user. Use `AskUserQuestion`:
@@ -298,7 +302,25 @@ In all cases that write, interpolate the template (`<skill-dir>/templates/CLAUDE
 - `{{BUILD_COMMAND}}`, `{{TEST_COMMAND}}` — from config
 - `{{COMMIT_FORMAT_BLOCK}}` — appropriate paragraph
 
-Always wrap the block in `<!-- BEGIN: multi-agent-coordination -->` … `<!-- END: multi-agent-coordination -->` markers so future re-runs can replace cleanly.
+### Marker rules (CRITICAL — read carefully)
+
+Always wrap the block in `<!--MAC-BLOCK:BEGIN-->` and `<!--MAC-BLOCK:END-->` markers (separate lines, with one blank line between the BEGIN marker and the `## 🚨 Multi-Agent Coordination` heading).
+
+**Important — do NOT use the legacy marker `<!-- BEGIN: multi-agent-coordination -->`.** Earlier versions had a transcription bug where Claude would merge the marker's tail (`coordination -->`) into the heading text on the next line, producing garbled output like `## 🚨 Multi-Agent Coordinationnation -->`. The shorter, distinct `MAC-BLOCK` marker avoids this collision.
+
+When writing the CLAUDE.md block, follow this structure **byte-for-byte**:
+
+```
+<!--MAC-BLOCK:BEGIN-->
+
+## 🚨 Multi-Agent Coordination
+
+<the rest of the interpolated block>
+
+<!--MAC-BLOCK:END-->
+```
+
+Note the blank line between `<!--MAC-BLOCK:BEGIN-->` and the heading. This visual separation also prevents accidental string merging during write.
 
 ## Step 9 — output terminal intros (VERBATIM from templates)
 
@@ -343,6 +365,16 @@ The intro file is ~50 lines of structured guidance. The output block should also
 
 Why this matters: the intro is what onboards the receiving terminal. If you summarize, the terminal misses critical rules (lock protocol details, commit format constraints, what they MUST NOT do). The receiving Claude session then improvises and the coordination protocol breaks down.
 
+### Handling identical build and test commands
+
+If `config.build_command == config.test_command` (this happens when the project has no test script and the user reuses the build command for both), do NOT print phrases like "run `npm run build` and `npm run build` until both pass" — that's nonsense. Instead:
+
+- Replace any " and `{{TEST_COMMAND}}`" with empty string.
+- Replace " until both pass" with " until it passes".
+- Replace "build and test" with "build" in flowing prose.
+
+End result: "run `npm run build` until it passes." Clean.
+
 ### Final check before declaring "setup complete"
 
 After printing the intros, scan your own output. Confirm:
@@ -350,7 +382,9 @@ After printing the intros, scan your own output. Confirm:
 - [ ] Every developer header is `━━━ T<N> (Developer) ━━━` — no other format.
 - [ ] If `has_planner`, exactly one block has header `━━━ P (Planner) ━━━` — never `T4` or `T<count>`.
 - [ ] Each developer intro body contains the line "You are Terminal {{TERMINAL_NUMBER}} (Developer) for this project" with the placeholder substituted (e.g. "You are Terminal 1 (Developer) for this project").
-- [ ] The planner intro body contains "You are the Planner (P) for this project".
+- [ ] The planner intro body contains "You are the Planner (P) for this project" or "You are the Planner".
+- [ ] No "the Planner (the Planner (P))" double-parens — substitute placeholders so the phrasing reads naturally.
+- [ ] If build_command == test_command, no `run X and X` redundancies — collapse to a single command form.
 - [ ] No intro body is shorter than ~40 lines of substituted content.
 
 If any check fails, re-print the offending block correctly before moving on.

@@ -1,4 +1,5 @@
-<!-- BEGIN: multi-agent-coordination -->
+<!--MAC-BLOCK:BEGIN-->
+
 ## 🚨 Multi-Agent Coordination
 
 This project runs **{{TERMINAL_COUNT}}** Claude Code terminals in parallel. Coordination is enforced by three artifacts at the repo root: `active_tasks.md` (kanban), `active_files.md` (file locks), and `.multi-agent/config.json` (settings). The kanban + lock files are gitignored (live state); the config is committed so team members get the same settings on clone.
@@ -53,4 +54,4 @@ Run both before moving any task to AWAITING REVIEW.
 ### Reference
 
 Full coordination protocol: load the `multi-agent-coordination` skill or read its references directly (`lock-protocol.md`, `approval-gate.md`, `git-workflow-variants.md`, `troubleshooting.md`).
-<!-- END: multi-agent-coordination -->
+<!--MAC-BLOCK:END-->
